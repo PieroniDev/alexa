@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=960, height=480, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neural Monitor ES5</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;600;800&display=swap');
+
+        :root {
+            --bg-dark: #050505;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --neon-green: #0aff68;
+            --text-main: #ffffff;
+            --text-muted: #8b9bb4;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            width: 960px;
+            height: 480px;
+            background-color: var(--bg-dark);
+            /* Fundo abstrato sutil */
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(188, 19, 254, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 243, 255, 0.1) 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden; /* Proíbe scroll */
+            display: grid;
+            grid-template-columns: 280px 1fr 260px;
+            gap: 16px;
+            padding: 20px;
+        }
+
+        /* === COLUNA 1: INFO PESSOAL === */
+        .col-left { display: flex; flex-direction: column; justify-content: space-between; }
+        
+        .greeting-box {
+            animation: fadeIn 1s ease;
+        }
+        .greeting-sub { font-size: 1.1rem; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
+        .greeting-main { font-size: 2.5rem; font-weight: 300; line-height: 1.1; margin-top: 5px; }
+
+        .clock-huge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 4.5rem;
+            font-weight: 700;
+            letter-spacing: -3px;
+            background: linear-gradient(to bottom, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+        .date-box { font-size: 1.2rem; color: var(--text-muted); margin-top: 5px; }
+
+        /* === COLUNA 2: WIDGET CENTRAL (FOCUS/CLIMA) === */
+        .col-center { 
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Weather State */
+        .weather-display { text-align: center; }
+        .weather-icon { font-size: 4rem; margin-bottom: 10px; display: block; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+        .weather-temp { font-size: 3.5rem; font-weight: 800; }
+        .weather-desc { font-size: 1.2rem; text-transform: capitalize; color: var(--text-muted); }
+
+        /* Pomodoro State (Hidden by default) */
+        .pomodoro-container { display: none; text-align: center; width: 100%; }
+        .timer-display { font-family: 'JetBrains Mono', monospace; font-size: 5rem; font-weight: 700; color: var(--neon-green); text-shadow: 0 0 20px rgba(10, 255, 104, 0.3); }
+        .timer-controls { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+        
+        .btn-pomo {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-start { background: var(--neon-green); color: #000; }
+        .btn-reset { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-pomo:active { transform: scale(0.95); }
+
+        /* === COLUNA 3: AÇÕES RÁPIDAS === */
+        .col-right { display: flex; flex-direction: column; gap: 15px; }
+
+        .action-card {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 20px;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .action-card:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
+        .action-card.active-state { background: rgba(0, 243, 255, 0.15); border-color: var(--neon-blue); }
+
+        .card-icon { font-size: 1.8rem; }
+        .card-label { font-size: 1rem; font-weight: 600; }
+        .card-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* === FLASHLIGHT OVERLAY === */
+        #flashlight-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 9999; display: none;
+        }
+
+        /* === ANIMAÇÕES === */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Hack para manter a tela ligada (video invisivel) */
+        #keep-awake-video { position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <video id="keep-awake-video" playsinline loop muted autoplay>
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+    </video>
+
+    <div id="flashlight-overlay"></div>
+
+    <div class="col-left">
+        <div class="greeting-box">
+            <div class="greeting-sub" id="greeting-time">BOM DIA</div>
+            <div class="greeting-main">Alexa<br>Monitor</div>
+        </div>
+        <div>
+            <div class="clock-huge" id="clock">00:00</div>
+            <div class="date-box" id="date">Segunda, 01 Jan</div>
+        </div>
+    </div>
+
+    <div class="col-center" id="main-display">
+        <div class="weather-display" id="view-weather">
+            <span class="weather-icon" id="w-icon">☁️</span>
+            <div class="weather-temp" id="w-temp">--°</div>
+            <div class="weather-desc" id="w-desc">Carregando...</div>
+            <div style="margin-top:15px; font-size: 0.9rem; opacity: 0.6;" id="w-loc">Formiga, MG</div>
+        </div>
+
+        <div class="pomodoro-container" id="view-pomodoro">
+            <div style="margin-bottom: 10px; opacity: 0.7; letter-spacing: 2px;">FOCO TOTAL</div>
+            <div class="timer-display" id="pomo-timer">25:00</div>
+            <div class="timer-controls">
+                <button class="btn-pomo btn-start" id="btn-start-pomo">Iniciar</button>
+                <button class="btn-pomo btn-reset" id="btn-reset-pomo">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-right">
+        <div class="action-card" id="card-focus" onclick="toggleMode('focus')">
+            <div class="card-icon">⏱️</div>
+            <div>
+                <div class="card-label">Modo Foco</div>
+                <div class="card-sub">Timer 25min</div>
+            </div>
+        </div>
+
+        <div class="action-card" onclick="toggleFlashlight()">
+            <div class="card-icon">💡</div>
+            <div>
+                <div class="card-label">Lanterna</div>
+                <div class="card-sub">Tela Branca</div>
+            </div>
+        </div>
+
+        <div class="action-card" onclick="window.location.reload()">
+            <div class="card-icon">🔄</div>
+            <div>
+                <div class="card-label">Atualizar</div>
+                <div class="card-sub">Recarregar Painel</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* CONFIGURAÇÃO */
+        const CONFIG = {
+            city: "Formiga,BR",
+            openWeatherKey: "2cea74114ab9aacee8331d01c8fca984" // INSIRA SUA KEY AQUI SE QUISER CLIMA REAL, SENÃO USA SIMULADO
+        };
+
+        /* RELÓGIO & DATA */
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('clock').innerText = `${String(hours).padStart(2,'0')}:${minutes}`;
+            
+            const options = { weekday: 'long', day: 'numeric', month: 'short' };
+            document.getElementById('date').innerText = now.toLocaleDateString('pt-BR', options);
+
+            // Saudação
+            let greet = "BOA NOITE";
+            if(hours >= 5 && hours < 12) greet = "BOM DIA";
+            else if(hours >= 12 && hours < 18) greet = "BOA TARDE";
+            document.getElementById('greeting-time').innerText = greet;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        /* CLIMA (Com Fallback Simulado para não quebrar sem API) */
+        async function fetchWeather() {
+            if(!CONFIG.openWeatherKey) {
+                // Simulação se não tiver chave
+                document.getElementById('w-temp').innerText = "24°";
+                document.getElementById('w-desc').innerText = "Parcialmente Nublado";
+                return;
+            }
+            try {
+                const url = `https://api.openweathermap.org/data/2.5/weather?q=${CONFIG.city}&appid=${CONFIG.openWeatherKey}&units=metric&lang=pt_br`;
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                document.getElementById('w-temp').innerText = Math.round(data.main.temp) + "°";
+                document.getElementById('w-desc').innerText = data.weather[0].description;
+                document.getElementById('w-loc').innerText = data.name;
+                
+                // Icones simples baseados no ID do tempo
+                const id = data.weather[0].id;
+                let icon = "☁️";
+                if(id >= 200 && id < 300) icon = "⛈️";
+                else if(id >= 300 && id < 500) icon = "🌧️";
+                else if(id >= 500 && id < 600) icon = "☔";
+                else if(id >= 600 && id < 700) icon = "❄️";
+                else if(id >= 700 && id < 800) icon = "🌫️";
+                else if(id === 800) icon = "☀️";
+                
+                document.getElementById('w-icon').innerText = icon;
+
+            } catch(e) { console.log("Erro clima", e); }
+        }
+        fetchWeather();
+        setInterval(fetchWeather, 600000); // 10 min
+
+        /* LÓGICA DE UI E MODOS */
+        let currentMode = 'weather'; // weather ou pomodoro
+        let pomodoroInterval;
+        let timeLeft = 25 * 60;
+        let isRunning = false;
+
+        function toggleMode(mode) {
+            const weatherDiv = document.getElementById('view-weather');
+            const pomoDiv = document.getElementById('view-pomodoro');
+            const focusCard = document.getElementById('card-focus');
+
+            if (currentMode === 'weather') {
+                weatherDiv.style.display = 'none';
+                pomoDiv.style.display = 'block';
+                focusCard.classList.add('active-state');
+                currentMode = 'pomodoro';
+            } else {
+                weatherDiv.style.display = 'block';
+                pomoDiv.style.display = 'none';
+                focusCard.classList.remove('active-state');
+                currentMode = 'weather';
+            }
+        }
+
+        /* POMODORO */
+        const timerDisplay = document.getElementById('pomo-timer');
+        
+        function updateTimerDisplay() {
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            timerDisplay.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+
+        document.getElementById('btn-start-pomo').addEventListener('click', function() {
+            if(isRunning) {
+                clearInterval(pomodoroInterval);
+                this.innerText = "Retomar";
+                this.style.background = "var(--neon-blue)";
+                isRunning = false;
+            } else {
+                this.innerText = "Pausar";
+                this.style.background = "#ff4757"; // vermelho para parar
+                isRunning = true;
+                pomodoroInterval = setInterval(() => {
+                    if(timeLeft > 0) {
+                        timeLeft--;
+                        updateTimerDisplay();
+                    } else {
+                        // Acabou
+                        clearInterval(pomodoroInterval);
+                        isRunning = false;
+                        timerDisplay.style.color = "var(--neon-purple)";
+                        alert("Tempo esgotado!"); // O Echo faz um som padrão de alerta web
+                    }
+                }, 1000);
+            }
+        });
+
+        document.getElementById('btn-reset-pomo').addEventListener('click', () => {
+            clearInterval(pomodoroInterval);
+            timeLeft = 25 * 60;
+            isRunning = false;
+            updateTimerDisplay();
+            document.getElementById('btn-start-pomo').innerText = "Iniciar";
+            document.getElementById('btn-start-pomo').style.background = "var(--neon-green)";
+            timerDisplay.style.color = "var(--neon-green)";
+        });
+
+        /* LANTERNA */
+        function toggleFlashlight() {
+            const overlay = document.getElementById('flashlight-overlay');
+            if(overlay.style.display === 'block') {
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.display = 'block';
+            }
+        }
+        
+        // Fecha lanterna ao tocar na tela branca
+        document.getElementById('flashlight-overlay').addEventListener('click', toggleFlashlight);
+
+        /* KEEP AWAKE HACK */
+        // Tenta reiniciar o video se ele pausar (comportamento do Silk)
+        const video = document.getElementById('keep-awake-video');
+        document.body.addEventListener('touchstart', () => {
+            if(video.paused) video.play();
+        });
+
+    </script>
+</body>
+</html>
