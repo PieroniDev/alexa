@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=960, height=480, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neural Monitor ES5</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;600;800&display=swap');
@@ -21,28 +21,24 @@
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
 
         body {
-            width: 960px;
-            height: 480px;
+            width: 100vw;
+            height: 100vh;
             background-color: var(--bg-dark);
-            /* Fundo abstrato sutil */
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(188, 19, 254, 0.15) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(0, 243, 255, 0.1) 0%, transparent 40%);
             color: var(--text-main);
             font-family: 'Outfit', sans-serif;
-            overflow: hidden; /* Proíbe scroll */
+            overflow: hidden;
             display: grid;
             grid-template-columns: 280px 1fr 260px;
             gap: 16px;
             padding: 20px;
         }
 
-        /* === COLUNA 1: INFO PESSOAL === */
+        /* === COLUNA 1 === */
         .col-left { display: flex; flex-direction: column; justify-content: space-between; }
-        
-        .greeting-box {
-            animation: fadeIn 1s ease;
-        }
+        .greeting-box { animation: fadeIn 1s ease; }
         .greeting-sub { font-size: 1.1rem; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
         .greeting-main { font-size: 2.5rem; font-weight: 300; line-height: 1.1; margin-top: 5px; }
 
@@ -58,7 +54,7 @@
         }
         .date-box { font-size: 1.2rem; color: var(--text-muted); margin-top: 5px; }
 
-        /* === COLUNA 2: WIDGET CENTRAL (FOCUS/CLIMA) === */
+        /* === COLUNA 2 === */
         .col-center { 
             background: var(--glass);
             border: 1px solid var(--glass-border);
@@ -73,13 +69,11 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* Weather State */
         .weather-display { text-align: center; }
         .weather-icon { font-size: 4rem; margin-bottom: 10px; display: block; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
         .weather-temp { font-size: 3.5rem; font-weight: 800; }
         .weather-desc { font-size: 1.2rem; text-transform: capitalize; color: var(--text-muted); }
 
-        /* Pomodoro State (Hidden by default) */
         .pomodoro-container { display: none; text-align: center; width: 100%; }
         .timer-display { font-family: 'JetBrains Mono', monospace; font-size: 5rem; font-weight: 700; color: var(--neon-green); text-shadow: 0 0 20px rgba(10, 255, 104, 0.3); }
         .timer-controls { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
@@ -97,8 +91,8 @@
         .btn-reset { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
         .btn-pomo:active { transform: scale(0.95); }
 
-        /* === COLUNA 3: AÇÕES RÁPIDAS === */
-        .col-right { display: flex; flex-direction: column; gap: 15px; }
+        /* === COLUNA 3 === */
+        .col-right { display: flex; flex-direction: column; gap: 12px; }
 
         .action-card {
             flex: 1;
@@ -108,8 +102,8 @@
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            padding: 0 20px;
-            gap: 15px;
+            padding: 0 15px;
+            gap: 12px;
             cursor: pointer;
             transition: all 0.3s;
         }
@@ -117,27 +111,25 @@
         .action-card:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
         .action-card.active-state { background: rgba(0, 243, 255, 0.15); border-color: var(--neon-blue); }
 
-        .card-icon { font-size: 1.8rem; }
-        .card-label { font-size: 1rem; font-weight: 600; }
-        .card-sub { font-size: 0.8rem; color: var(--text-muted); }
+        .card-icon { font-size: 1.5rem; }
+        .card-label { font-size: 0.95rem; font-weight: 600; }
+        .card-sub { font-size: 0.75rem; color: var(--text-muted); }
 
-        /* === FLASHLIGHT OVERLAY === */
         #flashlight-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; z-index: 9999; display: none;
         }
 
-        /* === ANIMAÇÕES === */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Hack para manter a tela ligada (video invisivel) */
-        #keep-awake-video { position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; }
+        /* Video invisível */
+        #keep-awake-video { position: absolute; width: 1px; height: 1px; opacity: 0.001; pointer-events: none; top: -100px;}
     </style>
 </head>
 <body>
 
-    <video id="keep-awake-video" playsinline loop muted autoplay>
-        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+    <video id="keep-awake-video" playsinline loop muted>
+        <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAACVtZGF0AAACtgAAAA1hdmNDAWQAC///AAAAC2J0cnQAAAAAAEA AAAhzdHRzAAAAAAAAAAEAAAAeAAABAAAAABxzdHNjAAAAAAAAAAEAAAABAAAAHgAAAAEAAAAUc3RzegAAAAAAAAAeAAAAAQAAAAxzdGNvAAAAAAAAAAEAAAAvAAAAQm1vb3YAAABsbXZoZAAAAADY629w2OtvcAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABwdHJhawAAAFx0a2hkAAAAAdjrb3DY629wAAAAAQAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAG1kaWEAAAAgbWRoZAAAAADY629w2OtvcAAAA+gAAAAAVcAAAAAAACBoZGxyAAAAAAAAAAB2aWRlAAAAAAAAAAAAAAAAVmlkZW8AAAAAAQBtaW5mAAAAFHZtaGQAAAAAAAQAAAAAAQAAAAIkZGluZgAAABxkcmVmAAAAAAAAAAEAAAAMdXJsIAAAAAEAAAEcc3RibAAAALhzdHNkAAAAAAAAAAEAAACobXA0dgAAAAAAAAABAAAAAQAAAAEADEAAAAAAAAAAAAAA2AEQAtoAAAAAAAYx//8AAAAqYXZjQwFkAAr/jMAr8PfN/8AAAAMAEAAAAwQA8YU5gwAAAwABAAADAEAAADxib3J0AAAAAQAIAAAAZ2JsbQAAAAEACAAAAAhidHJ0AAAAAAAQAAAAIHN0dHMAAAAAAAAAAQAAAA4AAAABAAAAFHN0c3oAAAAAAAAADgAAAAEAAAAcc3RzYwAAAAAAAAABAAAAAQAAAA4AAAABAAAAFHN0Y28AAAAAAAAAAQAAADIAAAAYdWR0YQAAABBtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyAAAAAAAAAAAAAAAAAAAAAA==" type="video/mp4">
     </video>
 
     <div id="flashlight-overlay"></div>
@@ -172,6 +164,14 @@
     </div>
 
     <div class="col-right">
+        <div class="action-card" onclick="toggleFullScreen()">
+            <div class="card-icon">⛶</div>
+            <div>
+                <div class="card-label">Tela Cheia</div>
+                <div class="card-sub">Ocultar Barra</div>
+            </div>
+        </div>
+
         <div class="action-card" id="card-focus" onclick="toggleMode('focus')">
             <div class="card-icon">⏱️</div>
             <div>
@@ -184,7 +184,7 @@
             <div class="card-icon">💡</div>
             <div>
                 <div class="card-label">Lanterna</div>
-                <div class="card-sub">Tela Branca</div>
+                <div class="card-sub">Luz Branca</div>
             </div>
         </div>
 
@@ -192,30 +192,57 @@
             <div class="card-icon">🔄</div>
             <div>
                 <div class="card-label">Atualizar</div>
-                <div class="card-sub">Recarregar Painel</div>
+                <div class="card-sub">Recarregar</div>
             </div>
         </div>
     </div>
 
     <script>
-        /* CONFIGURAÇÃO */
         const CONFIG = {
             city: "Formiga,BR",
-            openWeatherKey: "2cea74114ab9aacee8331d01c8fca984" // INSIRA SUA KEY AQUI SE QUISER CLIMA REAL, SENÃO USA SIMULADO
+            openWeatherKey: "" 
         };
 
-        /* RELÓGIO & DATA */
+        /* === CORREÇÃO DE ÁUDIO & KEEP AWAKE === */
+        const video = document.getElementById('keep-awake-video');
+        
+        // Função para garantir que o vídeo rode sem som
+        function ensureSilentPlayback() {
+            video.volume = 0.0; // Força zero absoluto
+            video.muted = true;
+            if(video.paused) {
+                video.play().catch(e => console.log("Aguardando interação para play"));
+            }
+        }
+        
+        // Tenta iniciar no carregamento
+        ensureSilentPlayback();
+        
+        // Reforça a cada toque na tela (para garantir que o browser não pause)
+        document.body.addEventListener('touchstart', ensureSilentPlayback, {passive: true});
+        document.body.addEventListener('click', ensureSilentPlayback);
+
+
+        /* === FULLSCREEN === */
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert("Para tela cheia, tente rolar a página para baixo.");
+                });
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        /* === RESTO DAS FUNÇÕES (IGUAL ANTERIOR) === */
         function updateTime() {
             const now = new Date();
             const hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            
             document.getElementById('clock').innerText = `${String(hours).padStart(2,'0')}:${minutes}`;
-            
             const options = { weekday: 'long', day: 'numeric', month: 'short' };
             document.getElementById('date').innerText = now.toLocaleDateString('pt-BR', options);
-
-            // Saudação
+            
             let greet = "BOA NOITE";
             if(hours >= 5 && hours < 12) greet = "BOM DIA";
             else if(hours >= 12 && hours < 18) greet = "BOA TARDE";
@@ -224,42 +251,33 @@
         setInterval(updateTime, 1000);
         updateTime();
 
-        /* CLIMA (Com Fallback Simulado para não quebrar sem API) */
         async function fetchWeather() {
             if(!CONFIG.openWeatherKey) {
-                // Simulação se não tiver chave
                 document.getElementById('w-temp').innerText = "24°";
-                document.getElementById('w-desc').innerText = "Parcialmente Nublado";
+                document.getElementById('w-desc').innerText = "Simulado";
                 return;
             }
             try {
                 const url = `https://api.openweathermap.org/data/2.5/weather?q=${CONFIG.city}&appid=${CONFIG.openWeatherKey}&units=metric&lang=pt_br`;
                 const res = await fetch(url);
                 const data = await res.json();
-                
                 document.getElementById('w-temp').innerText = Math.round(data.main.temp) + "°";
                 document.getElementById('w-desc').innerText = data.weather[0].description;
                 document.getElementById('w-loc').innerText = data.name;
                 
-                // Icones simples baseados no ID do tempo
                 const id = data.weather[0].id;
                 let icon = "☁️";
-                if(id >= 200 && id < 300) icon = "⛈️";
-                else if(id >= 300 && id < 500) icon = "🌧️";
-                else if(id >= 500 && id < 600) icon = "☔";
+                if(id === 800) icon = "☀️";
+                else if(id >= 200 && id < 300) icon = "⛈️";
+                else if(id >= 300 && id < 600) icon = "🌧️";
                 else if(id >= 600 && id < 700) icon = "❄️";
-                else if(id >= 700 && id < 800) icon = "🌫️";
-                else if(id === 800) icon = "☀️";
-                
                 document.getElementById('w-icon').innerText = icon;
-
             } catch(e) { console.log("Erro clima", e); }
         }
         fetchWeather();
-        setInterval(fetchWeather, 600000); // 10 min
+        setInterval(fetchWeather, 600000);
 
-        /* LÓGICA DE UI E MODOS */
-        let currentMode = 'weather'; // weather ou pomodoro
+        let currentMode = 'weather';
         let pomodoroInterval;
         let timeLeft = 25 * 60;
         let isRunning = false;
@@ -282,9 +300,7 @@
             }
         }
 
-        /* POMODORO */
         const timerDisplay = document.getElementById('pomo-timer');
-        
         function updateTimerDisplay() {
             const m = Math.floor(timeLeft / 60);
             const s = timeLeft % 60;
@@ -299,18 +315,17 @@
                 isRunning = false;
             } else {
                 this.innerText = "Pausar";
-                this.style.background = "#ff4757"; // vermelho para parar
+                this.style.background = "#ff4757"; 
                 isRunning = true;
                 pomodoroInterval = setInterval(() => {
                     if(timeLeft > 0) {
                         timeLeft--;
                         updateTimerDisplay();
                     } else {
-                        // Acabou
                         clearInterval(pomodoroInterval);
                         isRunning = false;
                         timerDisplay.style.color = "var(--neon-purple)";
-                        alert("Tempo esgotado!"); // O Echo faz um som padrão de alerta web
+                        alert("Tempo esgotado!");
                     }
                 }, 1000);
             }
@@ -326,25 +341,11 @@
             timerDisplay.style.color = "var(--neon-green)";
         });
 
-        /* LANTERNA */
         function toggleFlashlight() {
             const overlay = document.getElementById('flashlight-overlay');
-            if(overlay.style.display === 'block') {
-                overlay.style.display = 'none';
-            } else {
-                overlay.style.display = 'block';
-            }
+            overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
         }
-        
-        // Fecha lanterna ao tocar na tela branca
         document.getElementById('flashlight-overlay').addEventListener('click', toggleFlashlight);
-
-        /* KEEP AWAKE HACK */
-        // Tenta reiniciar o video se ele pausar (comportamento do Silk)
-        const video = document.getElementById('keep-awake-video');
-        document.body.addEventListener('touchstart', () => {
-            if(video.paused) video.play();
-        });
 
     </script>
 </body>
